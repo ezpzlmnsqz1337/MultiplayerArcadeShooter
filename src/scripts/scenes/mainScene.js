@@ -107,47 +107,9 @@ export default class MainScene extends Phaser.Scene {
     const player = this.sceneBuilder.getPlayer()
     const bullets = this.sceneBuilder.getBullets()
 
-    if (this.cursors.left.isDown) {
-        player.setVelocityX(-160)
-
-        player.anims.play('left', true)
-    } else if (this.cursors.right.isDown) {
-        player.setVelocityX(160)
-
-        player.anims.play('right', true)
-    } else {
-        player.setVelocityX(0)
-
-        player.anims.play('turn')
-    }
-
-    if (this.cursors.up.isDown && player.body.touching.down) {
-        player.setVelocityY(-330)
-    }
-
-    if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
-        const y = player.body.top + player.height / 2
-        console.log(player.body)
-        const bullet = this.sceneBuilder.addBullet(this, player.x, y, { bulletType: 'player', direction: player.anims.currentAnim.key })
-        this.socket.emit('bullet:created', { x: bullet.x, y: bullet.y, bulletId: bullet.bulletId })
-    }
-
-    // emit player movement
-    const x = player.x
-    const y = player.y
-    const animation = player.anims.currentAnim.key
-
-    if (player.oldPosition) {
-        const positionChanged = x !== player.oldPosition.x
-            || y !== player.oldPosition.y
-            || animation !== player.oldPosition.animation
-        if (positionChanged) {
-            this.socket.emit('player:movement', { x, y, animation })
-        }
-    }
     
-    // save old position data
-    player.oldPosition = { x, y, animation }
+
+    player.update()
 
     // emit bullet movement
     if (!bullets) return
