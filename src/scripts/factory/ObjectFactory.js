@@ -1,4 +1,5 @@
 import Player from '../objects/Player'
+import OtherPlayer from '../objects/OtherPlayer'
 import Platform from '../objects/Platform'
 
 export default class ObjectFactory {
@@ -14,7 +15,7 @@ export default class ObjectFactory {
     }
 
     createPlayer(scene, x, y, opts) {
-        console.log('Add player: ', playerInfo)
+        console.log('Add player: ', opts)
         // The player and its settings
         const player = opts.mainPlayer ? new Player(scene, x, y, opts) : new OtherPlayer(scene, x, y, opts)
       

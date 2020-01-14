@@ -56,10 +56,10 @@ export default class MainScene extends Phaser.Scene {
         console.log('Current players: ', players)
         Object.keys(players).forEach(id => {            
             if (players[id].playerId === this.socket.id) {
-                const player = this.objectFactory.createPlayer(scene, players[id], { mainPlayer: true })
+                const player = this.objectFactory.createPlayer(this, players[id].x, players[id].y, { mainPlayer: true })
                 this.player = player
             } else {
-                const player = this.objectFactory.createPlayer(scene, players[id], { mainPlayer: false })
+                const player = this.objectFactory.createPlayer(this, players[id].x, players[id].y, { mainPlayer: false })
                 this.otherPlayers.add(player)
             }
         })
@@ -125,7 +125,7 @@ export default class MainScene extends Phaser.Scene {
             this.objectFactory.createPlatform(this, 600, 400, { name: 'platform' }),
             this.objectFactory.createPlatform(this, 50, 250, { name: 'platform' }),
             this.objectFactory.createPlatform(this, 750, 220, { name: 'platform' })
-        ], true)
+        ])
 
         //  Input Events
 
