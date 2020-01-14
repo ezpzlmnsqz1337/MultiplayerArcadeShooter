@@ -11,8 +11,12 @@ module.exports = {
     SharedArrayBuffer: 'readonly'
   },
   parserOptions: {
+    parser: 'babel-eslint',
     ecmaVersion: 2018,
     sourceType: 'module'
+  },
+  ecmaFeatures: {
+    classes: true
   },
   rules: {
     'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'off',

@@ -56,7 +56,7 @@ io.on('connection', function (socket) {
     })
 
     socket.on('bullet:created', function (bullet) {
-        bullets[bullet.bulletId] = {
+        bullets[bullet.id] = {
             x: bullet.x,
             y: bullet.y
         }
@@ -65,13 +65,13 @@ io.on('connection', function (socket) {
     })
 
     socket.on('bullet:movement', function (movementData) {
-        console.log('B id: ', movementData.bulletId)
+        console.log('B id: ', movementData.id)
         console.log('Bullets: ', bullets)
         console.log('Movement data: ', movementData)
-        bullets[movementData.bulletId].x = movementData.x
-        bullets[movementData.bulletId].y = movementData.y
+        bullets[movementData.id].x = movementData.x
+        bullets[movementData.id].y = movementData.y
         // emit a message to all players about the bullet that moved
-        socket.broadcast.emit('bullet:moved', bullets[movementData.bulletId])
+        socket.broadcast.emit('bullet:moved', bullets[movementData.id])
     })
 
     socket.on('disconnect', function () {

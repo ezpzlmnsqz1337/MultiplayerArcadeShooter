@@ -1,134 +1,146 @@
-import SceneBuilder from '../builders/SceneBuilder'
+import ObjectFactory from '../factory/ObjectFactory'
 import FpsText from '../objects/fpsText'
+import EventType from '../types/EventType'
 
 import io from 'socket.io-client'
+import eventBus from '../EventBus'
 
 export default class MainScene extends Phaser.Scene {
-  constructor() {
-    super({ key: 'MainScene' })
-    this.fpsText = null
-    this.sceneBuilder = SceneBuilder.getInstance()
-    this.cursors = null
-    this.socket = null        
-    this.stars = null
-    this.bombs = null
-    this.spacebar = null
-    this.score = 0
-    this.gameOver = false
-    this.scoreText = null
-  }
+    constructor() {
+        super({ key: 'MainScene' })
+        this.fpsText = null
+        this.objectFactory = ObjectFactory.getInstance()
 
-  bindEvents(scene) {
-    this.socket = io('http://malina:3000')
-    this.socket.on('connect', () => console.log('connect'))
-    this.socket.on('disconnect', () => console.log('disconnect'))
+        // game objects
+        this.player = this.physics.add.group()
+        this.otherPlayers = this.this.physics.add.group()
+        this.platforms = this.this.physics.add.staticGroup()
+        this.stars = this.this.physics.add.group()
+        this.bombs = this.this.physics.add.group()
+        this.bullets = this.this.physics.add.group()
 
-    this.socket.on('currentPlayers', players => {
-        console.log('Current players: ', players)
-        Object.keys(players).forEach(id => {
-            if (players[id].playerId === this.socket.id) {
-                this.sceneBuilder.addPlayer(scene, players[id])
-            } else {
-                this.sceneBuilder.addOtherPlayers(scene, players[id])
-            }
+        // controls
+        this.cursors = this.input.keyboard.createCursorKeys()//  Input Events
+        this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
+
+        // network
+        this.socket = null
+
+        // game status
+        this.gameOver = false
+        this.scoreText = null
+    }
+
+    bindEvents(scene) {
+        this.socket = io('http://malina:3000')
+        this.socket.on('connect', () => console.log('connect'))
+        this.socket.on('disconnect', () => console.log('disconnect'))
+
+        this.socket.on('currentPlayers', e => this.handleCurrentPlayers(e))
+        this.socket.on('player:connected', e => this.handlePlayerConnected(e))
+        this.socket.on('player:disconnected', e => this.handlePlayerDisconnected(e))
+        this.socket.on('player:moved', e => this.handlePlayerMoved(e))
+
+        this.socket.on('currentBullets', e => this.handleCurrentBullets(e))
+
+        eventBus.on(EventType.PLAYER_SHOOT, e => {
+            const y = e.player.body.top + e.player.height / 2
+            const bullet = this.objectFactory.addBullet(this, e.player.x, e.player.y, { bulletType: 'player', direction: e.player.anims.currentAnim.key })
+            this.bullets.add(bullet)
+            this.socket.emit('bullet:created', { x: bullet.x, y: bullet.y, id: bullet.id })
         })
-    })
+    }
 
-    this.socket.on('player:connected', playerInfo => {
+    handlePlayerConnected(e) {
+        const playerInfo = e
         console.log('Player connected: ', playerInfo)
-        this.sceneBuilder.addOtherPlayers(scene, playerInfo)
-    })
+        const player = this.objectFactory.createPlayer(scene, playerInfo)
+        this.player.add(player)    
+    }
 
-    this.socket.on('player:disconnected', playerId => {
+    handlePlayerDisconnected(e) {
+        const playerId = e
         console.log('Player disconnected: ', playerId)
-        this.sceneBuilder.getOtherPlayers().getChildren().forEach(x => {
+        this.otherPlayers.getChildren().forEach(x => {
             if (playerId === x.playerId) {
                 x.destroy()
             }
         })
-    })
+    }
 
-    this.socket.on('player:moved', playerInfo => {
-        this.sceneBuilder.getOtherPlayers().getChildren().forEach(x => {
+    handleCurrentPlayers(e) {
+        const players = e
+        console.log('Current players: ', players)
+        Object.keys(players).forEach(id => {
+            const player = this.objectFactory.createPlayer(scene, players[id])
+            if (players[id].playerId === this.socket.id) {
+                this.player.add(player)
+            } else {
+                this.otherPlayers.add(player)
+            }
+        })
+    }
+
+    handlePlayerMoved(e) {
+        const playerInfo = e
+        this.otherPlayers.getChildren().forEach(x => {
             if (playerInfo.playerId === x.playerId) {
                 x.setPosition(playerInfo.x, playerInfo.y)
                 const loop = ['left', 'right'].includes(playerInfo.animation) ? true : false
                 x.anims.play(playerInfo.animation, loop)
             }
         })
-    })
+    }
 
-    this.socket.on('currentBullets', bullets => {
+    handleCurrentBullets(e) {
+        const bullets = e
         Object.keys(bullets).forEach(bullet => {
-            // this.sceneBuilder.addBullet(scene, bullet.x, bullet.y, { bulletId: bullet.bulletId })
-        })
-    })
-  }
-
-  create() {
-    this.bindEvents(this)
-
-    this.fpsText = new FpsText(this)
-    //  A simple background for our game
-    this.add.image(400, 300, 'sky')
-
-    //  The platforms group contains the ground and the 2 ledges we can jump on
-
-    //  Here we create the ground.
-    //  Scale it to fit the width of the game (the original sprite is 400x32 in size)
-    console.log('Create')
-    this.sceneBuilder.addPlatform(this, 400, 568, { name: 'platform', scale: 2 })
-
-    //  Now let's create some ledges
-    this.sceneBuilder.addPlatform(this, 600, 400, { name: 'platform' })
-    this.sceneBuilder.addPlatform(this, 50, 250, { name: 'platform' })
-    this.sceneBuilder.addPlatform(this, 750, 220, { name: 'platform' })
-
-    //  Input Events
-    this.cursors = this.input.keyboard.createCursorKeys()//  Input Events
-    this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
-
-    //  The score
-    this.scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' })
-
-    // display the Phaser.VERSION
-    this.add
-      .text(this.cameras.main.width - 15, 15, `Phaser v${Phaser.VERSION}`, {
-        color: '#000000',
-        fontSize: 24
-      })
-      .setOrigin(1, 0)
-  }
-
-  update() {
-    this.fpsText.update()
-
-    if (!this.sceneBuilder || !this.sceneBuilder.getPlayer() || this.gameOver) return
-    const player = this.sceneBuilder.getPlayer()
-    const bullets = this.sceneBuilder.getBullets()
-
-    
-
-    player.update()
-
-    // emit bullet movement
-    if (!bullets) return
-
-    bullets.getChildren().forEach(b => {
-        const x = b.x
-        const y = b.y
-        const bulletId = b.bulletId
-
-        if (b.oldPosition) {
-            const positionChanged = x !== b.oldPosition.x
-                || y !== b.oldPosition.y
-            if (positionChanged) {
-                this.socket.emit('bullet:movement', { x, y, bulletId })
+            if (!this.bullets.getChildren().map(x => x.id).contains(bullet.id)) {
+                this.objectFactory.addBullet(scene, bullet.x, bullet.y, { id: bullet.id })
             }
-        }
-        
-        // save old position data
-        b.oldPosition = { x, y }
-    })
-  }
+        })
+    }
+
+    create() {
+        console.log('Create')
+        this.bindEvents(this)
+
+        this.fpsText = new FpsText(this)
+        //  A simple background for our game
+        this.add.image(400, 300, 'sky')
+
+        // ground
+        this.platforms.addMultiple([
+            this.objectFactory.createPlatform(this, 400, 568, { name: 'platform', scale: 2 }),
+            //  Now let's create some ledges
+            this.objectFactory.createPlatform(this, 600, 400, { name: 'platform' }),
+            this.objectFactory.createPlatform(this, 50, 250, { name: 'platform' }),
+            this.objectFactory.createPlatform(this, 750, 220, { name: 'platform' })
+        ])
+
+        //  Input Events
+
+        //  The score
+        this.scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' })
+
+        // display the Phaser.VERSION
+        this.add
+        .text(this.cameras.main.width - 15, 15, `Phaser v${Phaser.VERSION}`, {
+            color: '#000000',
+            fontSize: 24
+        })
+        .setOrigin(1, 0)
+    }
+
+    update() {
+        this.fpsText.update()
+
+        if (!this.player || this.gameOver) return
+        this.player.update()
+
+        // emit bullet movement
+        if (!this.bullets) return
+
+        this.bullets.getChildren().forEach(b => b.update())
+    }
 }
