@@ -1,9 +1,12 @@
 import ObjectType from '../types/ObjectType'
 import EventType from '../types/EventType'
 import eventBus from '../EventBus'
+import Direction from '../types/Direction'
+import IDProvider from '../IDProvider'
+import PlayerAnimation from '../types/PlayerAnimation'
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene, x, y) {
+    constructor(scene, x, y, opts) {
         super(scene, x, y, 'dude')
         this.objectType = ObjectType.PLAYER
         this.id = IDProvider.getId(this.objectType)
@@ -14,20 +17,20 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         
         //  Our player animations, turning, walking left and walking right.
         scene.anims.create({
-            key: 'left',
+            key: PlayerAnimation.LEFT,
             frames: scene.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
             frameRate: 10,
             repeat: -1
         })
         
         scene.anims.create({
-            key: 'turn',
+            key: PlayerAnimation.TURN,
             frames: [ { key: 'dude', frame: 4 } ],
             frameRate: 20
         })
         
         scene.anims.create({
-            key: 'right',
+            key: PlayerAnimation.RIGHT,
             frames: scene.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
             frameRate: 10,
             repeat: -1
@@ -37,11 +40,11 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     jump() {
-
+        this.setVelocityY(-330)
     }
 
     shoot() {
-
+        eventBus.emit(EventType.PLAYER_SHOOT, { player, bullet })
     }
 
     duck() {
@@ -49,18 +52,18 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     go(direction) {
-        if (direction === 'left') {
+        if (direction === Direction.LEFT) {
             this.setVelocityX(-160)    
-            this.anims.play('left', true)
+            this.anims.play(PlayerAnimation.LEFT, true)
         } else {
             this.setVelocityX(160)  
-            this.anims.play('right', true)
+            this.anims.play(PlayerAnimation.RIGHT, true)
         }
     }
 
     stay() {
         this.setVelocityX(0)
-        this.anims.play('turn')
+        this.anims.play(PlayerAnimation.TURN)
     }
 
     preload() {
@@ -73,19 +76,19 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
     update() {
         if (this.scene.cursors.left.isDown) {
-            this.go('left')
+            this.go(Direction.LEFT)
         } else if (this.scene.cursors.right.isDown) {
-            this.go('left')
+            this.go(Direction.RIGHT)
         } else {
             this.stay()        
         }
 
         if (this.scene.cursors.up.isDown && this.body.touching.down) {
-            this.setVelocityY(-330)
+            this.jump()
         }
       
         if (Phaser.Input.Keyboard.JustDown(this.scene.spacebar)) {
-            eventBus.emit(EventType.PLAYER_SHOOT, { player, bullet })          
+            this.shoot()     
         }
 
         // emit player movement
@@ -98,7 +101,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
                 || y !== this.oldPosition.y
                 || animation !== this.oldPosition.animation
             if (positionChanged) {
-                this.scene.socket.emit('player:movement', { x, y, animation })
+                this.scene.socket.emit(EventType.PLAYER_MOVEMENT, { x, y, animation })
             }
         }
       

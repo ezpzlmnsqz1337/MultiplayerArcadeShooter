@@ -1,6 +1,8 @@
 import ObjectFactory from '../factory/ObjectFactory'
 import FpsText from '../objects/fpsText'
 import EventType from '../types/EventType'
+import BulletOwner from '../types/BulletOwner'
+import Direction from '../types/Direction'
 
 import io from 'socket.io-client'
 import eventBus from '../EventBus'
@@ -12,49 +14,30 @@ export default class MainScene extends Phaser.Scene {
         this.objectFactory = ObjectFactory.getInstance()
 
         // game objects
-        this.player = this.physics.add.group()
-        this.otherPlayers = this.this.physics.add.group()
-        this.platforms = this.this.physics.add.staticGroup()
-        this.stars = this.this.physics.add.group()
-        this.bombs = this.this.physics.add.group()
-        this.bullets = this.this.physics.add.group()
-
-        // controls
-        this.cursors = this.input.keyboard.createCursorKeys()//  Input Events
-        this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
-
-        // network
-        this.socket = null
-
-        // game status
-        this.gameOver = false
-        this.scoreText = null
+        console.log(this)
     }
 
-    bindEvents(scene) {
+    bindEvents() {
         this.socket = io('http://malina:3000')
+        // socket status
         this.socket.on('connect', () => console.log('connect'))
         this.socket.on('disconnect', () => console.log('disconnect'))
 
-        this.socket.on('currentPlayers', e => this.handleCurrentPlayers(e))
-        this.socket.on('player:connected', e => this.handlePlayerConnected(e))
-        this.socket.on('player:disconnected', e => this.handlePlayerDisconnected(e))
-        this.socket.on('player:moved', e => this.handlePlayerMoved(e))
+        // game socket events
+        this.socket.on(EventType.CURRENT_PLAYERS, e => this.handleCurrentPlayers(e))
+        this.socket.on(EventType.PLAYER_CONNECTED, e => this.handlePlayerConnected(e))
+        this.socket.on(EventType.PLAYER_DISCONNECTED, e => this.handlePlayerDisconnected(e))
+        this.socket.on(EventType.PLAYER_MOVED, e => this.handlePlayerMoved(e))
+        this.socket.on(EventType.CURRENT_BULLETS, e => this.handleCurrentBullets(e))
 
-        this.socket.on('currentBullets', e => this.handleCurrentBullets(e))
-
-        eventBus.on(EventType.PLAYER_SHOOT, e => {
-            const y = e.player.body.top + e.player.height / 2
-            const bullet = this.objectFactory.addBullet(this, e.player.x, e.player.y, { bulletType: 'player', direction: e.player.anims.currentAnim.key })
-            this.bullets.add(bullet)
-            this.socket.emit('bullet:created', { x: bullet.x, y: bullet.y, id: bullet.id })
-        })
+        // game events
+        eventBus.on(EventType.PLAYER_SHOOT, e => this.handlePlayerShoot(e))
     }
 
     handlePlayerConnected(e) {
         const playerInfo = e
         console.log('Player connected: ', playerInfo)
-        const player = this.objectFactory.createPlayer(scene, playerInfo)
+        const player = this.objectFactory.createPlayer(scene, playerInfo, { mainPlayer: false })
         this.player.add(player)    
     }
 
@@ -71,11 +54,12 @@ export default class MainScene extends Phaser.Scene {
     handleCurrentPlayers(e) {
         const players = e
         console.log('Current players: ', players)
-        Object.keys(players).forEach(id => {
-            const player = this.objectFactory.createPlayer(scene, players[id])
+        Object.keys(players).forEach(id => {            
             if (players[id].playerId === this.socket.id) {
-                this.player.add(player)
+                const player = this.objectFactory.createPlayer(scene, players[id], { mainPlayer: true })
+                this.player = player
             } else {
+                const player = this.objectFactory.createPlayer(scene, players[id], { mainPlayer: false })
                 this.otherPlayers.add(player)
             }
         })
@@ -86,7 +70,7 @@ export default class MainScene extends Phaser.Scene {
         this.otherPlayers.getChildren().forEach(x => {
             if (playerInfo.playerId === x.playerId) {
                 x.setPosition(playerInfo.x, playerInfo.y)
-                const loop = ['left', 'right'].includes(playerInfo.animation) ? true : false
+                const loop = Object.keys(Direction).includes(playerInfo.animation) ? true : false
                 x.anims.play(playerInfo.animation, loop)
             }
         })
@@ -101,9 +85,34 @@ export default class MainScene extends Phaser.Scene {
         })
     }
 
+    handlePlayerShoot(e) {
+        const y = e.player.body.top + e.player.height / 2
+        const bullet = this.objectFactory.addBullet(this, e.player.x, y, { owner: BulletOwner.PLAYER, direction: e.player.anims.currentAnim.key })
+        this.bullets.add(bullet)
+        this.socket.emit(EventType.BULLET_CREATED, { x: bullet.x, y: bullet.y, id: bullet.id })
+    }
+
     create() {
-        console.log('Create')
-        this.bindEvents(this)
+        this.player = null
+        this.otherPlayers = this.physics.add.group()
+        this.platforms = this.physics.add.staticGroup()
+        this.stars = this.physics.add.group()
+        this.bombs = this.physics.add.group()
+        this.bullets = this.physics.add.group()
+
+        // controls
+        this.cursors = this.input.keyboard.createCursorKeys()//  Input Events
+        this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
+
+        // network
+        this.socket = null
+
+        // game status
+        this.gameOver = false
+        this.scoreText = null
+
+        console.log('Create', this)
+        this.bindEvents()
 
         this.fpsText = new FpsText(this)
         //  A simple background for our game
@@ -116,7 +125,7 @@ export default class MainScene extends Phaser.Scene {
             this.objectFactory.createPlatform(this, 600, 400, { name: 'platform' }),
             this.objectFactory.createPlatform(this, 50, 250, { name: 'platform' }),
             this.objectFactory.createPlatform(this, 750, 220, { name: 'platform' })
-        ])
+        ], true)
 
         //  Input Events
 
@@ -135,12 +144,13 @@ export default class MainScene extends Phaser.Scene {
     update() {
         this.fpsText.update()
 
-        if (!this.player || this.gameOver) return
-        this.player.update()
+        if (this.player && !this.gameOver) {
+            this.player.update()
+        }
 
         // emit bullet movement
-        if (!this.bullets) return
-
-        this.bullets.getChildren().forEach(b => b.update())
+        if (this.bullets) {
+            this.bullets.getChildren().forEach(b => b.update())
+        }
     }
 }

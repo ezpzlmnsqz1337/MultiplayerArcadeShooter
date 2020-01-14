@@ -1,3 +1,5 @@
+import IDProvider from '../IDProvider'
+import ObjectType from '../types/ObjectType'
 export default class Bullet extends Phaser.Physics.Arcade.Image {
   constructor(scene, x, y) {
     super(scene, x, y, 'bullet', opts)

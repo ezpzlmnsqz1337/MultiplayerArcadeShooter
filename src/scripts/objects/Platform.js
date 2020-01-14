@@ -1,4 +1,7 @@
-export default class Bullet extends Phaser.Physics.Arcade.Image {
+import ObjectType from '../types/ObjectType'
+import IDProvider from '../IDProvider'
+
+export default class Platform extends Phaser.Physics.Arcade.Image {
     constructor(scene, x, y, opts) {
         super(scene, x, y, 'platform')
 
@@ -7,10 +10,9 @@ export default class Bullet extends Phaser.Physics.Arcade.Image {
 
         this.owner = opts.owner        
         if (opts.scale) this.setScale(opts.scale)
-
-        this.refreshBody()
         
         scene.add.existing(this)   
+        // this.refreshBody()
     }
 
     update() {

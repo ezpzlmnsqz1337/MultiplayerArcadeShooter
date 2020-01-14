@@ -30,9 +30,9 @@ function playerConnected(socket) {
         team: (Math.floor(Math.random() * 2) == 0) ? 'red' : 'blue'
     }
     // send the players object to the new player
-    socket.emit('currentPlayers', players)
+    socket.emit(EventType.CURRENT_PLAYERS, players)
     // update all other players of the new player
-    socket.broadcast.emit('player:connected', players[socket.id])
+    socket.broadcast.emit(EventType.PLAYER_CONNECTED, players[socket.id])
 }
 
 function playerDisconnected(socket) {
@@ -40,28 +40,28 @@ function playerDisconnected(socket) {
     // remove this player from our players object
     delete players[socket.id]
     // emit a message to all players to remove this player
-    io.emit('player:disconnected', socket.id)
+    io.emit(EventType.PLAYER_DISCONNECTED, socket.id)
 }
 
 // events
 io.on('connection', function (socket) {
     playerConnected(socket)
 
-    socket.on('player:movement', function (movementData) {
+    socket.on(EventType.PLAYER_MOVEMENT, function (movementData) {
         players[socket.id].x = movementData.x
         players[socket.id].y = movementData.y
         players[socket.id].animation = movementData.animation
         // emit a message to all players about the player that moved
-        socket.broadcast.emit('player:moved', players[socket.id])
+        socket.broadcast.emit(EventType.PLAYER_MOVED, players[socket.id])
     })
 
-    socket.on('bullet:created', function (bullet) {
+    socket.on(EventType.BULLET_CREATED, function (bullet) {
         bullets[bullet.id] = {
             x: bullet.x,
             y: bullet.y
         }
         // emit a message to all players about the bullet that moved
-        socket.broadcast.emit('currentBullets', bullets)
+        socket.broadcast.emit(EventType.CURRENT_BULLETS, bullets)
     })
 
     socket.on('bullet:movement', function (movementData) {

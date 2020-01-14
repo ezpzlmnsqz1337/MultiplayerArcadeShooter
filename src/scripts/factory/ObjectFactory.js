@@ -1,5 +1,5 @@
 import Player from '../objects/Player'
-import ObjectType from '../types/ObjectType'
+import Platform from '../objects/Platform'
 
 export default class ObjectFactory {
     constructor() {
@@ -13,23 +13,23 @@ export default class ObjectFactory {
         return this.instance
     }
 
-    addPlayer(scene, x, y, opts) {
+    createPlayer(scene, x, y, opts) {
         console.log('Add player: ', playerInfo)
         // The player and its settings
-        const player = new Player(scene, x, y)
+        const player = opts.mainPlayer ? new Player(scene, x, y, opts) : new OtherPlayer(scene, x, y, opts)
       
         //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
         scene.physics.add.collider(player, scene.platforms)
         return player
     }
 
-    addPlatform(scene, x, y, opts) {
-        const platform = new Platform(scene, x, y, opts.name)
+    createPlatform(scene, x, y, opts) {
+        const platform = new Platform(scene, x, y, opts)
 
         return platform
     }
     
-    addBullet(scene, x, y, opts) {
+    createBullet(scene, x, y, opts) {
         const bullet =  new Bullet(scene, x, y, opts)
         
         console.log('Createa bullet with id: ', bullet.bulletId)
