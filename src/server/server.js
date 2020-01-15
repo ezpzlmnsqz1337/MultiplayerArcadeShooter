@@ -24,13 +24,14 @@ function playerConnected(socket) {
     // create a new player and add it to our players object
     players[socket.id] = {
         rotation: 0,
-        x: Math.floor(Math.random() * 700) + 50,
-        y: Math.floor(Math.random() * 500) + 50,
+        x: 90,
+        y: 80,
         playerId: socket.id,
         team: (Math.floor(Math.random() * 2) == 0) ? 'red' : 'blue'
     }
     // send the players object to the new player
     socket.emit(EventType.CURRENT_PLAYERS, players)
+    socket.emit(EventType.CURRENT_BULLETS, bullets)
     // update all other players of the new player
     socket.broadcast.emit(EventType.PLAYER_CONNECTED, players[socket.id])
 }
@@ -52,13 +53,14 @@ const EventType = Object.freeze({
     PLAYER_MOVED: 'player:moved',
     PLAYER_MOVEMENT: 'player:movement',
     CURRENT_BULLETS: 'currentBullets',
-    BULLET_CREATED: 'bullet:created'
+    BULLET_CREATED: 'bullet:created',
+    BULLET_REMOVE: 'bullet:remove'
 })
 
-io.on('connection', function (socket) {
+io.on('connection', socket => {
     playerConnected(socket)
 
-    socket.on(EventType.PLAYER_MOVEMENT, function (movementData) {
+    socket.on(EventType.PLAYER_MOVEMENT, movementData => {
         players[socket.id].x = movementData.x
         players[socket.id].y = movementData.y
         players[socket.id].animation = movementData.animation
@@ -66,26 +68,30 @@ io.on('connection', function (socket) {
         socket.broadcast.emit(EventType.PLAYER_MOVED, players[socket.id])
     })
 
-    socket.on(EventType.BULLET_CREATED, function (bullet) {
-        bullets[bullet.id] = {
-            x: bullet.x,
-            y: bullet.y
-        }
+    socket.on(EventType.BULLET_CREATED, bullet => {
+        console.log('Create bullet: ', bullet)
+        bullets[bullet.id] = bullet
         // emit a message to all players about the bullet that moved
         socket.broadcast.emit(EventType.CURRENT_BULLETS, bullets)
     })
 
-    socket.on('bullet:movement', function (movementData) {        
-        console.log('Bullets: ', bullets)
-        console.log('Movement data: ', movementData)
-        console.log('Bullet: ', bullets[movementData.id])
+    socket.on(EventType.BULLET_REMOVE, bullet => {
+        console.log('Remove bullet: ', bullet)
+        delete bullets[bullet.id]
+        // emit a message to all players about the bullet that moved
+        // socket.broadcast.emit(EventType.CURRENT_BULLETS, bullets)
+    })
+
+    socket.on('bullet:movement', movementData => {        
+        // console.log('Bullets: ', Object.keys(bullets).length)
+        console.log('Bullets: ', Object.keys(bullets))
         bullets[movementData.id].x = movementData.x
         bullets[movementData.id].y = movementData.y
         // emit a message to all players about the bullet that moved
         socket.broadcast.emit('bullet:moved', bullets[movementData.id])
     })
 
-    socket.on('disconnect', function () {
+    socket.on('disconnect', () => {
         playerDisconnected(socket)
     })
 })

@@ -40,8 +40,9 @@ export default class MainScene extends Phaser.Scene {
     handlePlayerConnected(e) {
         const playerInfo = e
         console.log('Player connected: ', playerInfo)
-        const player = this.objectFactory.createPlayer(scene, playerInfo, { mainPlayer: false })
-        this.player.add(player)    
+        const player = this.objectFactory.createPlayer(this, playerInfo.x, playerInfo.y, { mainPlayer: false, playerId: playerInfo.playerId })
+        this.otherPlayers.add(player)
+        console.log(this.otherPlayers.getChildren())
     }
 
     handlePlayerDisconnected(e) {
@@ -59,19 +60,21 @@ export default class MainScene extends Phaser.Scene {
         console.log('Current players: ', players)
         Object.keys(players).forEach(id => {            
             if (players[id].playerId === this.socket.id) {
-                const player = this.objectFactory.createPlayer(this, players[id].x, players[id].y, { mainPlayer: true })
+                const player = this.objectFactory.createPlayer(this, players[id].x, players[id].y, { mainPlayer: true, playerId: players[id].playerId })
                 this.player = player
             } else {
-                const player = this.objectFactory.createPlayer(this, players[id].x, players[id].y, { mainPlayer: false })
+                console.log('Adding other player:  ', players[id].playerId)
+                const player = this.objectFactory.createPlayer(this, players[id].x, players[id].y, { mainPlayer: false, playerId: players[id].playerId })
                 this.otherPlayers.add(player)
             }
         })
     }
 
     handlePlayerMoved(e) {
-        const playerInfo = e
-        this.otherPlayers.getChildren().forEach(x => {
-            if (playerInfo.playerId === x.playerId) {
+        const playerInfo = e        
+        console.log('Player moved', playerInfo.playerId)
+        this.otherPlayers.getChildren().forEach(x => {            
+            if (playerInfo.playerId === x.id) {
                 x.setPosition(playerInfo.x, playerInfo.y)
                 const loop = Object.keys(Direction).includes(playerInfo.animation) ? true : false
                 x.anims.play(playerInfo.animation, loop)
@@ -81,9 +84,9 @@ export default class MainScene extends Phaser.Scene {
 
     handleCurrentBullets(e) {
         const bullets = e
-        Object.keys(bullets).forEach(bullet => {
-            if (!this.bullets.getChildren().map(x => x.id).contains(bullet.id)) {
-                this.objectFactory.createBullet(scene, bullet.x, bullet.y, { id: bullet.id, group: this.bullets })
+        Object.keys(bullets).forEach(bulletId => {
+            if (!this.bullets.getChildren().map(x => x.id).includes(bulletId)) {
+                this.objectFactory.createBullet(this, bullets[bulletId].x, bullets[bulletId].y, { direction: bullets[bulletId].direction, id: bulletId, group: this.bullets })
             }
         })
     }
@@ -91,8 +94,8 @@ export default class MainScene extends Phaser.Scene {
     handlePlayerShoot(e) {
         const y = e.player.body.top + e.player.height / 2
         const bullet = this.objectFactory.createBullet(this, e.player.x, y, { owner: BulletOwner.PLAYER, direction: e.player.anims.currentAnim.key, group: this.bullets })
-        console.log('Bullet: ', bullet.body.velocity)
-        this.socket.emit(EventType.BULLET_CREATED, { x: bullet.x, y: bullet.y, id: bullet.id })
+        console.log('Bullet: ', bullet.id)
+        this.socket.emit(EventType.BULLET_CREATED, { id: bullet.id, x: bullet.x, y: bullet.y, owner: bullet.owner, direction: bullet.direction })
     }
 
     create() {
@@ -116,10 +119,19 @@ export default class MainScene extends Phaser.Scene {
         this.add.image(400, 300, 'sky')
 
         // ground
-        this.objectFactory.createPlatform(this, 400, 568, { name: 'platform', scale: 2, group: this.platforms }),
+        this.objectFactory.createPlatform(this, 400, 0, { name: 'platform', scale: 2, group: this.platforms })
+        const leftWall = this.objectFactory.createPlatform(this, 5, 270, { name: 'platform', scale: 2, group: this.platforms })
+        leftWall.displayWidth = 10
+        leftWall.displayHeight = 540
+        const rightWall = this.objectFactory.createPlatform(this, 795, 270, { name: 'platform', scale: 2, group: this.platforms })
+        rightWall.displayWidth = 10
+        rightWall.displayHeight = 540
+
+
+        this.objectFactory.createPlatform(this, 400, 568, { name: 'platform', scale: 2, group: this.platforms })
         //  Now let's create some ledges
-        this.objectFactory.createPlatform(this, 600, 400, { name: 'platform', group: this.platforms }),
-        this.objectFactory.createPlatform(this, 50, 250, { name: 'platform', group: this.platforms }),
+        this.objectFactory.createPlatform(this, 600, 400, { name: 'platform', group: this.platforms })
+        this.objectFactory.createPlatform(this, 50, 250, { name: 'platform', group: this.platforms })
         this.objectFactory.createPlatform(this, 750, 220, { name: 'platform', group: this.platforms })
 
         //  Input Events

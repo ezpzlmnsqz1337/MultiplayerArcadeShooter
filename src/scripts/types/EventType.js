@@ -6,5 +6,6 @@ export default Object.freeze({
     PLAYER_MOVED: 'player:moved',
     PLAYER_MOVEMENT: 'player:movement',
     CURRENT_BULLETS: 'currentBullets',
-    BULLET_CREATED: 'bullet:created'
+    BULLET_CREATED: 'bullet:created',
+    BULLET_REMOVE: 'bullet:remove'
 })

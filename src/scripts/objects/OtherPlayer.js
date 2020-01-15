@@ -5,6 +5,7 @@ import AbstractSprite from './AbstractSprite'
 export default class OtherPlayer extends AbstractSprite {
     constructor(scene, x, y, opts) {
         super(scene, x, y, 'otherPlayer', ObjectType.PLAYER, opts)
+        this.id = opts.playerId // player must have different id
         
         //  Our player animations, turning, walking left and walking right.
         scene.anims.create({

@@ -1,8 +1,5 @@
 export default class IDProvider {
-
-    constructor() {
-        this.id = 0
-    }
+    static id = 0
 
     static getId(socket, type) {
         this.id++

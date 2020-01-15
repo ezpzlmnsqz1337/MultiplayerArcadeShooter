@@ -9,6 +9,7 @@ export default class Player extends AbstractSprite {
     constructor(scene, x, y, opts) {
         super(scene, x, y, 'dude', ObjectType.PLAYER, opts)
         this.weapon = null
+        this.id = opts.playerId // player must have different id
         
         //  Our player animations, turning, walking left and walking right.
         scene.anims.create({

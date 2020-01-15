@@ -35,6 +35,7 @@ export default class ObjectFactory {
     }
     
     createBullet(scene, x, y, opts) {
+        console.log('BID2: ' , opts.id)
         const bullet =  new Bullet(scene, x, y, opts)
         
         console.log('Createa bullet with id: ', bullet.id)
@@ -46,7 +47,7 @@ export default class ObjectFactory {
         return bullet
     }
 
-    playerHit(o1, o2) {
+    playerHit(o1, o2) {        
         o1.destroy()
         o2.destroy()
     }
