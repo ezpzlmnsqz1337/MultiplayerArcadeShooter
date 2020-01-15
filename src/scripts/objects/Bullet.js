@@ -1,17 +1,21 @@
 import IDProvider from '../IDProvider'
 import ObjectType from '../types/ObjectType'
-export default class Bullet extends Phaser.Physics.Arcade.Image {
-  constructor(scene, x, y) {
-    super(scene, x, y, 'bullet', opts)
+import Direction from '../types/Direction'
+import AbstractImage from './AbstractImage'
 
-    this.objectType = ObjectType.BULLET
-    this.id = IDProvider.getId(this.objectType)
+export default class Bullet extends AbstractImage {
+  constructor(scene, x, y, opts) {
+    super(scene, x, y, 'bullet', ObjectType.BULLET, opts)
 
     this.owner = opts.owner
-    
-    this.setCollideWorldBounds(true)
 
-    scene.add.existing(this)   
+    this.setCollideWorldBounds(true)
+    this.body.setAllowGravity(false)
+    if (opts.direction === Direction.LEFT) {
+      this.setVelocityX(-700)
+    } else {
+      this.setVelocityX(700)
+    }
   }
 
   update() {
@@ -23,11 +27,11 @@ export default class Bullet extends Phaser.Physics.Arcade.Image {
         const positionChanged = x !== this.oldPosition.x
             || y !== this.oldPosition.y
         if (positionChanged) {
-            this.socket.emit('bullet:movement', { x, y, id })
+            this.scene.socket.emit('bullet:movement', { x, y, id })
         }
     }
     
     // save old position data
-    b.oldPosition = { x, y }
+    this.oldPosition = { x, y }
   }
 }

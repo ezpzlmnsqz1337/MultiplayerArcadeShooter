@@ -1,19 +1,11 @@
 import ObjectType from '../types/ObjectType'
-import IDProvider from '../IDProvider'
+import AbstractImage from './AbstractImage'
 
-export default class Platform extends Phaser.Physics.Arcade.Image {
+export default class Platform extends AbstractImage {
     constructor(scene, x, y, opts) {
-        super(scene, x, y, 'platform')
+        super(scene, x, y, 'platform', ObjectType.PLATFORM, opts)
 
-        this.objectType = ObjectType.PLATFORM
-        this.id = IDProvider.getId(this.objectType)
-  
-        if (opts.scale) this.setScale(opts.scale)
-        
-        scene.add.existing(this)
-
-        setTimeout(() => this.refreshBody())
-        
+        setTimeout(() => this.refreshBody(), 500)        
     }
 
     update() {

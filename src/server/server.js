@@ -75,10 +75,10 @@ io.on('connection', function (socket) {
         socket.broadcast.emit(EventType.CURRENT_BULLETS, bullets)
     })
 
-    socket.on('bullet:movement', function (movementData) {
-        console.log('B id: ', movementData.id)
+    socket.on('bullet:movement', function (movementData) {        
         console.log('Bullets: ', bullets)
         console.log('Movement data: ', movementData)
+        console.log('Bullet: ', bullets[movementData.id])
         bullets[movementData.id].x = movementData.x
         bullets[movementData.id].y = movementData.y
         // emit a message to all players about the bullet that moved

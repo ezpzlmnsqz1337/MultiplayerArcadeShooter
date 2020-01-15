@@ -2,14 +2,13 @@ import ObjectType from '../types/ObjectType'
 import EventType from '../types/EventType'
 import eventBus from '../EventBus'
 import Direction from '../types/Direction'
-import IDProvider from '../IDProvider'
 import PlayerAnimation from '../types/PlayerAnimation'
+import AbstractSprite from './AbstractSprite'
 
-export default class Player extends Phaser.Physics.Arcade.Sprite {
+export default class Player extends AbstractSprite {
     constructor(scene, x, y, opts) {
-        super(scene, x, y, 'dude')
-        this.objectType = ObjectType.PLAYER
-        this.id = IDProvider.getId(this.objectType)
+        super(scene, x, y, 'dude', ObjectType.PLAYER, opts)
+        this.weapon = null
         
         //  Our player animations, turning, walking left and walking right.
         scene.anims.create({
@@ -31,9 +30,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
             frameRate: 10,
             repeat: -1
         })
-
-        scene.add.existing(this)
-        scene.physics.add.existing(this)
         //  Player physics properties. Give the little guy a slight bounce.
         this.setBounce(0.2)
         this.setCollideWorldBounds(true)  
@@ -44,7 +40,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     shoot() {
-        eventBus.emit(EventType.PLAYER_SHOOT, { player, bullet })
+        eventBus.emit(EventType.PLAYER_SHOOT, { player: this, weapon: this.weapon })
     }
 
     duck() {

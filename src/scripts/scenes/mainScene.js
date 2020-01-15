@@ -3,26 +3,29 @@ import FpsText from '../objects/fpsText'
 import EventType from '../types/EventType'
 import BulletOwner from '../types/BulletOwner'
 import Direction from '../types/Direction'
+import eventBus from '../EventBus'
 
 import io from 'socket.io-client'
-import eventBus from '../EventBus'
 
 export default class MainScene extends Phaser.Scene {
     constructor() {
         super({ key: 'MainScene' })
-        this.fpsText = null
         this.objectFactory = ObjectFactory.getInstance()
+        
+        // network
+        this.socket = null
 
-        // game objects
-        console.log(this)
+        // game status
+        this.gameOver = false
+        this.scoreText = null
+        this.fpsText = null
     }
 
     bindEvents() {
-        this.socket = io('http://malina:3000')
+        this.socket = io('http://localhost:3000')
         // socket status
         this.socket.on('connect', () => console.log('connect'))
         this.socket.on('disconnect', () => console.log('disconnect'))
-
         // game socket events
         this.socket.on(EventType.CURRENT_PLAYERS, e => this.handleCurrentPlayers(e))
         this.socket.on(EventType.PLAYER_CONNECTED, e => this.handlePlayerConnected(e))
@@ -80,15 +83,15 @@ export default class MainScene extends Phaser.Scene {
         const bullets = e
         Object.keys(bullets).forEach(bullet => {
             if (!this.bullets.getChildren().map(x => x.id).contains(bullet.id)) {
-                this.objectFactory.addBullet(scene, bullet.x, bullet.y, { id: bullet.id })
+                this.objectFactory.createBullet(scene, bullet.x, bullet.y, { id: bullet.id, group: this.bullets })
             }
         })
     }
 
     handlePlayerShoot(e) {
         const y = e.player.body.top + e.player.height / 2
-        const bullet = this.objectFactory.addBullet(this, e.player.x, y, { owner: BulletOwner.PLAYER, direction: e.player.anims.currentAnim.key })
-        this.bullets.add(bullet)
+        const bullet = this.objectFactory.createBullet(this, e.player.x, y, { owner: BulletOwner.PLAYER, direction: e.player.anims.currentAnim.key, group: this.bullets })
+        console.log('Bullet: ', bullet.body.velocity)
         this.socket.emit(EventType.BULLET_CREATED, { x: bullet.x, y: bullet.y, id: bullet.id })
     }
 
@@ -104,12 +107,6 @@ export default class MainScene extends Phaser.Scene {
         this.cursors = this.input.keyboard.createCursorKeys()//  Input Events
         this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
 
-        // network
-        this.socket = null
-
-        // game status
-        this.gameOver = false
-        this.scoreText = null
 
         console.log('Create', this)
         this.bindEvents()
@@ -119,13 +116,11 @@ export default class MainScene extends Phaser.Scene {
         this.add.image(400, 300, 'sky')
 
         // ground
-        this.platforms.addMultiple([
-            this.objectFactory.createPlatform(this, 400, 568, { name: 'platform', scale: 2 }),
-            //  Now let's create some ledges
-            this.objectFactory.createPlatform(this, 600, 400, { name: 'platform' }),
-            this.objectFactory.createPlatform(this, 50, 250, { name: 'platform' }),
-            this.objectFactory.createPlatform(this, 750, 220, { name: 'platform' })
-        ])
+        this.objectFactory.createPlatform(this, 400, 568, { name: 'platform', scale: 2, group: this.platforms }),
+        //  Now let's create some ledges
+        this.objectFactory.createPlatform(this, 600, 400, { name: 'platform', group: this.platforms }),
+        this.objectFactory.createPlatform(this, 50, 250, { name: 'platform', group: this.platforms }),
+        this.objectFactory.createPlatform(this, 750, 220, { name: 'platform', group: this.platforms })
 
         //  Input Events
 

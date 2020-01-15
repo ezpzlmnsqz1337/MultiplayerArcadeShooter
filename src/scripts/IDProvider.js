@@ -4,8 +4,8 @@ export default class IDProvider {
         this.id = 0
     }
 
-    static getId(type) {
+    static getId(socket, type) {
         this.id++
-        return btoa(`${type}|${this.id}`)
+        return socket.id + '|' + btoa(`${type}|${this.id}`)
     }
 }
