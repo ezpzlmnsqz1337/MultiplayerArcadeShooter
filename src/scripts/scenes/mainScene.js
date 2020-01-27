@@ -27,11 +27,11 @@ export default class MainScene extends Phaser.Scene {
         this.socket.on('connect', () => console.log('connect'))
         this.socket.on('disconnect', () => console.log('disconnect'))
         // game socket events
-        this.socket.on(EventType.CURRENT_PLAYERS, e => this.handleCurrentPlayers(e))
-        this.socket.on(EventType.PLAYER_CONNECTED, e => this.handlePlayerConnected(e))
+        this.socket.on(EventType.GAME_INFO, e => this.handleGameInfo(e))
         this.socket.on(EventType.PLAYER_DISCONNECTED, e => this.handlePlayerDisconnected(e))
         this.socket.on(EventType.PLAYER_MOVED, e => this.handlePlayerMoved(e))
-        this.socket.on(EventType.CURRENT_BULLETS, e => this.handleCurrentBullets(e))
+        this.socket.on(EventType.PLAYER_CONNECTED, e => this.handlePlayerConnected(e))
+        this.socket.on(EventType.BULLET_CREATE, e => this.handleBulletCreate(e))
 
         // game events
         eventBus.on(EventType.PLAYER_SHOOT, e => this.handlePlayerShoot(e))
@@ -55,8 +55,8 @@ export default class MainScene extends Phaser.Scene {
         })
     }
 
-    handleCurrentPlayers(e) {
-        const players = e
+    handleGameInfo(e) {
+        const players = e.players
         console.log('Current players: ', players)
         Object.keys(players).forEach(id => {            
             if (players[id].playerId === this.socket.id) {
@@ -66,6 +66,13 @@ export default class MainScene extends Phaser.Scene {
                 console.log('Adding other player:  ', players[id].playerId)
                 const player = this.objectFactory.createPlayer(this, players[id].x, players[id].y, { mainPlayer: false, playerId: players[id].playerId })
                 this.otherPlayers.add(player)
+            }
+        })
+        
+        const bullets = e.bullets
+        Object.keys(bullets).forEach(bulletId => {
+            if (!this.bullets.getChildren().map(x => x.id).includes(bulletId)) {
+                this.objectFactory.createBullet(this, bullets[bulletId].x, bullets[bulletId].y, { direction: bullets[bulletId].direction, id: bulletId, group: this.bullets })
             }
         })
     }
@@ -82,20 +89,16 @@ export default class MainScene extends Phaser.Scene {
         })
     }
 
-    handleCurrentBullets(e) {
-        const bullets = e
-        Object.keys(bullets).forEach(bulletId => {
-            if (!this.bullets.getChildren().map(x => x.id).includes(bulletId)) {
-                this.objectFactory.createBullet(this, bullets[bulletId].x, bullets[bulletId].y, { direction: bullets[bulletId].direction, id: bulletId, group: this.bullets })
-            }
-        })
-    }
-
     handlePlayerShoot(e) {
         const y = e.player.body.top + e.player.height / 2
         const bullet = this.objectFactory.createBullet(this, e.player.x, y, { owner: BulletOwner.PLAYER, direction: e.player.anims.currentAnim.key, group: this.bullets })
         console.log('Bullet: ', bullet.id)
         this.socket.emit(EventType.BULLET_CREATED, { id: bullet.id, x: bullet.x, y: bullet.y, owner: bullet.owner, direction: bullet.direction })
+    }
+
+    handleBulletCreate(e) {
+        const bullet = e
+        this.objectFactory.createBullet(this, bullet.x, bullet.y, { id: bullet.id, owner: bullet.owner, direction: bullet.direction, group: this.bullets })
     }
 
     create() {

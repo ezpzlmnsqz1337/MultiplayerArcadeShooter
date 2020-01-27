@@ -30,8 +30,7 @@ function playerConnected(socket) {
         team: (Math.floor(Math.random() * 2) == 0) ? 'red' : 'blue'
     }
     // send the players object to the new player
-    socket.emit(EventType.CURRENT_PLAYERS, players)
-    socket.emit(EventType.CURRENT_BULLETS, bullets)
+    socket.emit(EventType.GAME_INFO, { players, bullets })
     // update all other players of the new player
     socket.broadcast.emit(EventType.PLAYER_CONNECTED, players[socket.id])
 }
@@ -54,7 +53,9 @@ const EventType = Object.freeze({
     PLAYER_MOVEMENT: 'player:movement',
     CURRENT_BULLETS: 'currentBullets',
     BULLET_CREATED: 'bullet:created',
-    BULLET_REMOVE: 'bullet:remove'
+    BULLET_REMOVE: 'bullet:remove',
+    BULLET_CREATE: 'bullet:create',
+    GAME_INFO: 'gameInfo'
 })
 
 io.on('connection', socket => {
@@ -71,14 +72,14 @@ io.on('connection', socket => {
     socket.on(EventType.BULLET_CREATED, bullet => {
         console.log('Create bullet: ', bullet)
         bullets[bullet.id] = bullet
-        // emit a message to all players about the bullet that moved
-        socket.broadcast.emit(EventType.CURRENT_BULLETS, bullets)
+        // update all other players of the new bullet
+        socket.broadcast.emit(EventType.BULLET_CREATE, bullet)
     })
 
     socket.on(EventType.BULLET_REMOVE, bullet => {
         console.log('Remove bullet: ', bullet)
         delete bullets[bullet.id]
-        // emit a message to all players about the bullet that moved
+        // emit a message to all players about the bullet that should be removed
         // socket.broadcast.emit(EventType.CURRENT_BULLETS, bullets)
     })
 
