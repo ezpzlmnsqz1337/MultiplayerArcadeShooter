@@ -31,7 +31,8 @@ export default class MainScene extends Phaser.Scene {
         this.socket.on(EventType.PLAYER_DISCONNECTED, e => this.handlePlayerDisconnected(e))
         this.socket.on(EventType.PLAYER_MOVED, e => this.handlePlayerMoved(e))
         this.socket.on(EventType.PLAYER_CONNECTED, e => this.handlePlayerConnected(e))
-        this.socket.on(EventType.BULLET_CREATE, e => this.handleBulletCreate(e))
+        this.socket.on(EventType.BULLET_CREATE, e => this.handleBulletCreate(e))        
+        this.socket.on(EventType.PLAYER_DIED, e => this.handlePlayerDied(e))
 
         // game events
         eventBus.on(EventType.PLAYER_SHOOT, e => this.handlePlayerShoot(e))
@@ -91,7 +92,7 @@ export default class MainScene extends Phaser.Scene {
 
     handlePlayerShoot(e) {
         const y = e.player.body.top + e.player.height / 2
-        const bullet = this.objectFactory.createBullet(this, e.player.x, y, { owner: BulletOwner.PLAYER, direction: e.player.anims.currentAnim.key, group: this.bullets })
+        const bullet = this.objectFactory.createBullet(this, e.player.x, y, { owner: e.player.id, direction: e.player.anims.currentAnim.key, group: this.bullets })
         console.log('Bullet: ', bullet.id)
         this.socket.emit(EventType.BULLET_CREATED, { id: bullet.id, x: bullet.x, y: bullet.y, owner: bullet.owner, direction: bullet.direction })
     }
@@ -99,6 +100,19 @@ export default class MainScene extends Phaser.Scene {
     handleBulletCreate(e) {
         const bullet = e
         this.objectFactory.createBullet(this, bullet.x, bullet.y, { id: bullet.id, owner: bullet.owner, direction: bullet.direction, group: this.bullets })
+    }
+
+    handlePlayerDied(e) {
+        console.log('Player died', e)
+        // main player kills
+        if (e.killer.id === this.player.id) {
+            this.player.frag()
+        }
+
+        // main player died
+        if (e.dead.id === this.player.id) {
+            this.player.die()
+        }
     }
 
     create() {

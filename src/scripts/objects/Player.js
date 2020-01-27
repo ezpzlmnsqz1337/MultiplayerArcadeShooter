@@ -36,6 +36,10 @@ export default class Player extends AbstractSprite {
         this.setCollideWorldBounds(true)  
     }
 
+    setWeapon(weapon) {
+        this.weapon = weapon
+    }
+
     jump() {
         this.setVelocityY(-330)
     }
@@ -61,6 +65,15 @@ export default class Player extends AbstractSprite {
     stay() {
         this.setVelocityX(0)
         this.anims.play(PlayerAnimation.TURN)
+    }
+
+    die() {
+        this.setVelocityX(Math.random() * 100)
+        this.setVelocityY(Math.random() * 100)
+    }
+
+    frag() {
+        console.log('frag')
     }
 
     preload() {

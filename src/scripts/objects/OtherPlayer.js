@@ -32,5 +32,18 @@ export default class OtherPlayer extends AbstractSprite {
         this.setBounce(0.2)
         this.setCollideWorldBounds(true)
     }
+
+    setWeapon(weapon) {
+        this.weapon = weapon
+    }
+
+    die() {
+        this.setVelocityX(Math.random() * 100)
+        this.setVelocityY(Math.random() * 100)
+    }
+
+    frag() {
+        console.log('frag')
+    }
 }
   

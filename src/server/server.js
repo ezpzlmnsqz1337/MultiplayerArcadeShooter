@@ -55,7 +55,9 @@ const EventType = Object.freeze({
     BULLET_CREATED: 'bullet:created',
     BULLET_REMOVE: 'bullet:remove',
     BULLET_CREATE: 'bullet:create',
-    GAME_INFO: 'gameInfo'
+    GAME_INFO: 'gameInfo',
+    PLAYER_HIT: 'player:hit',
+    PLAYER_DIED: 'player:died'
 })
 
 io.on('connection', socket => {
@@ -70,26 +72,29 @@ io.on('connection', socket => {
     })
 
     socket.on(EventType.BULLET_CREATED, bullet => {
-        console.log('Create bullet: ', bullet)
         bullets[bullet.id] = bullet
         // update all other players of the new bullet
         socket.broadcast.emit(EventType.BULLET_CREATE, bullet)
     })
 
     socket.on(EventType.BULLET_REMOVE, bullet => {
-        console.log('Remove bullet: ', bullet)
         delete bullets[bullet.id]
         // emit a message to all players about the bullet that should be removed
         // socket.broadcast.emit(EventType.CURRENT_BULLETS, bullets)
     })
 
     socket.on('bullet:movement', movementData => {        
-        // console.log('Bullets: ', Object.keys(bullets).length)
-        console.log('Bullets: ', Object.keys(bullets))
         bullets[movementData.id].x = movementData.x
         bullets[movementData.id].y = movementData.y
         // emit a message to all players about the bullet that moved
         socket.broadcast.emit('bullet:moved', bullets[movementData.id])
+    })
+
+    socket.on(EventType.PLAYER_HIT, e => {
+        console.log('Player hit: ', e.player.id, e.bullet.id, e.bullet.owner)
+        if (e.player.id !== e.bullet.owner) {
+            socket.broadcast.emit(EventType.PLAYER_DIED, { killer: e.bullet.owner, dead: e.player.id })
+        }
     })
 
     socket.on('disconnect', () => {

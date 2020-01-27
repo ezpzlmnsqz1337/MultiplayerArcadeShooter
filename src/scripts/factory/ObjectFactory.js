@@ -4,6 +4,7 @@ import Platform from '../objects/Platform'
 import Bullet from '../objects/Bullet'
 import StandardWeapon from '../objects/StandardWeapon'
 import BulletOwner from '../types/BulletOwner'
+import EventType from '../types/EventType'
 
 export default class ObjectFactory {
     constructor() {
@@ -21,9 +22,8 @@ export default class ObjectFactory {
         console.log('Add player: ', opts)
         // The player and its settings
         const player = opts.mainPlayer ? new Player(scene, x, y, opts) : new OtherPlayer(scene, x, y, opts)
-        player.setWeapon = new StandardWeapon()
+        player.setWeapon(new StandardWeapon())
       
-        //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
         scene.physics.add.collider(player, scene.platforms)
         return player
     }
@@ -47,9 +47,16 @@ export default class ObjectFactory {
         return bullet
     }
 
-    playerHit(o1, o2) {        
-        o1.destroy()
-        o2.destroy()
+    playerHit(o1, o2) {
+        this.socket.emit(EventType.PLAYER_HIT, {
+            bullet: {
+                id: o1.id,
+                owner: o1.owner
+            },
+            player: {
+                id: o2.id                
+            }
+        })
     }
     
     wallHit(o1, o2) {

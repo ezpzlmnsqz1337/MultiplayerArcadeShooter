@@ -9,5 +9,7 @@ export default Object.freeze({
     BULLET_CREATED: 'bullet:created',
     BULLET_REMOVE: 'bullet:remove',
     BULLET_CREATE: 'bullet:create',
-    GAME_INFO: 'gameInfo'
+    GAME_INFO: 'gameInfo',
+    PLAYER_HIT: 'player:hit',
+    PLAYER_DIED: 'player:died'
 })
